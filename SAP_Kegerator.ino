@@ -2,6 +2,8 @@
 #include "spark-dallas-temperature.h"
 #include "HttpClient.h"
 
+#define DEBUG 1
+
 // A couple of utility functions that sort of work like a general
 // printf statement.  Sort of.
 
@@ -103,7 +105,9 @@ float getTemperatureInF() {
   sensors.requestTemperatures();
   tempF = sensors.getTempFByIndex(0);
   if (tempF != DEVICE_DISCONNECTED_F) {
-    // Serial.print(tempF); Serial.println("F");
+#if DEBUG
+    Serial_printf("%fF", tempF);
+#endif // DEBUG
   }
   return tempF;
 }
@@ -113,7 +117,9 @@ float getTemperatureInC() {
   sensors.requestTemperatures();
   tempC = sensors.getTempCByIndex(0);
   if (tempC > DEVICE_DISCONNECTED_C) {
-    // Serial.print(tempC); Serial.println("C");
+#if DEBUG
+    Serial_printf("%fC", tempC);
+#endif // DEBUG
   }
   return tempC;
 }
@@ -121,7 +127,9 @@ float getTemperatureInC() {
 void reportTemperature() {
   double temperature = getTemperatureInF();
   if (temperature > DEVICE_DISCONNECTED_F) {
+#if DEBUG
     Serial_printf("************** POSTing temperature: %f", temperature);
+#endif // DEBUG
     postTemperatureToHana(temperature);
   }
 }
@@ -133,11 +141,15 @@ void reportTemperature() {
 void countPulses() {
   pulses++;
   timeToEndPour = millis() + PULSE_LATENCY;
+#if DEBUG
   Serial_printf("Got a pulse!  Pulse = %d", pulses);
+#endif // DEBUG
 }
 
 void reportPour(float volume) {
+#if DEBUG
   Serial_printf("############# POSTing pour: %f", volume);
+#endif // DEBUG
   postPourToHana(volume);
 }
 
@@ -154,7 +166,9 @@ int getDoorState() {
 }
 
 void reportDoorState(int doorIsOpen) {
+#if DEBUG
   Serial_printf("================= POSTing door: %s", (DOOR_OPEN == doorState) ? "Open" : "Closed");
+#endif // DEBUG
   if (DOOR_OPEN == doorState) {
     postDoorToHana(1);  // Door is open.
   } else {
@@ -172,7 +186,7 @@ void postToHana(String endpoint, String body) {
   request.port = port;
   request.path = path + endpoint;
   request.body = body;
-#ifdef DEBUG
+#if DEBUG
   Serial.println("==================== Request body =======================");
   Serial.println(body);
   Serial.println("=================== End of request ======================");
@@ -180,9 +194,8 @@ void postToHana(String endpoint, String body) {
 
   http.post(request, response, headers);
 
-#ifdef DEBUG
+#if DEBUG
   Serial.println("=================== Response status =====================");
-  Serial.print("***** POST Response status: ");
   Serial.println(response.status);
   Serial.println("==================== Response body ======================");
   Serial.println(response.body);
@@ -225,7 +238,9 @@ void loop() {
   // Check the door state for change.
 
   doorState = getDoorState();
-  // Serial.print("doorIsOpen = "); Serial.println(doorIsOpen);
+#if DEBUG
+  Serial_printf("doorIsOpen = %s", doorState ? "Open" : "Closed");
+#endif // DEBUG
   if (doorState != previousDoorState) {
     reportDoorState(doorState);
     previousDoorState = doorState;
